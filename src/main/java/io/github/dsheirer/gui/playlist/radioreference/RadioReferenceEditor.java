@@ -690,6 +690,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
                     Platform.runLater(() -> {
                         getCountySystemEditor().setSystems(countyInfo.getSystems());
                         getCountyAgencyEditor().setAgencies(countyInfo.getAgencies());
+                        getCountyAgencyEditor().setCountywideCategories(countyInfo.getCategories());
                     });
                 }
                 catch(RadioReferenceException rre)

@@ -23,6 +23,7 @@ import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.rrapi.type.Agency;
 import io.github.dsheirer.rrapi.type.AgencyInfo;
+import io.github.dsheirer.rrapi.type.Category;
 import io.github.dsheirer.service.radioreference.RadioReference;
 import io.github.dsheirer.util.ThreadPool;
 import javafx.application.Platform;
@@ -48,6 +49,7 @@ import java.util.List;
 public class AgencyEditor extends VBox
 {
     private static final Logger mLog = LoggerFactory.getLogger(AgencyEditor.class);
+    private static final int PLACEHOLDER_AGENCY_ID = -1;
     private UserPreferences mUserPreferences;
     private RadioReference mRadioReference;
     private PlaylistManager mPlaylistManager;
@@ -55,6 +57,7 @@ public class AgencyEditor extends VBox
     private ListView<Agency> mAgencyListView;
     private AgencyFrequencyEditor mAgencyFrequencyEditor;
     private IntegerProperty mAgencyCountProperty = new SimpleIntegerProperty();
+    private List<Category> mCountywideCategories;
 
     /**
      * Constructs an instance
@@ -91,7 +94,11 @@ public class AgencyEditor extends VBox
 
         if(agencies != null && !agencies.isEmpty())
         {
+            final Agency placeholder = new Agency();
+            placeholder.setAgencyId(PLACEHOLDER_AGENCY_ID);
+            placeholder.setName("(Countywide)");
             Collections.sort(agencies, new AgencyComparator());
+            getAgencyListView().getItems().add(placeholder);
             getAgencyListView().getItems().addAll(agencies);
 
             int preferredAgencyId = mUserPreferences.getRadioReferencePreference().getPreferredAgencyId(mLevel);
@@ -106,6 +113,11 @@ public class AgencyEditor extends VBox
                 }
             }
         }
+    }
+
+    public void setCountywideCategories(List<Category> categories)
+    {
+        mCountywideCategories = categories;
     }
 
     public void clear()
@@ -156,18 +168,25 @@ public class AgencyEditor extends VBox
             mUserPreferences.getRadioReferencePreference().setPreferredAgencyId(agency.getAgencyId(), mLevel);
 
             ThreadPool.CACHED.submit(() -> {
-                try
+                if(agency.getAgencyId() == PLACEHOLDER_AGENCY_ID)
                 {
-                    final AgencyInfo agencyInfo = mRadioReference.getService().getAgencyInfo(agency);
-                    Platform.runLater(() -> getAgencyFrequencyEditor().setCategories(agencyInfo.getCategories()));
+                    Platform.runLater(() -> getAgencyFrequencyEditor().setCategories(mCountywideCategories));
                 }
-                catch(Throwable t)
+                else
                 {
-                    mLog.error("Error retrieving agency info", t);
-                    Platform.runLater(() -> {
-                        getAgencyFrequencyEditor().setLoading(false);
-                        new RadioReferenceUnavailableAlert(getAgencyListView()).showAndWait();
-                    });
+                    try
+                    {
+                        final AgencyInfo agencyInfo = mRadioReference.getService().getAgencyInfo(agency);
+                        Platform.runLater(() -> getAgencyFrequencyEditor().setCategories(agencyInfo.getCategories()));
+                    }
+                    catch(Throwable t)
+                    {
+                        mLog.error("Error retrieving agency info", t);
+                        Platform.runLater(() -> {
+                            getAgencyFrequencyEditor().setLoading(false);
+                            new RadioReferenceUnavailableAlert(getAgencyListView()).showAndWait();
+                        });
+                    }
                 }
             });
         }
