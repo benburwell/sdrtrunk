@@ -181,11 +181,24 @@ public class RadioReferenceDecoder
      */
     public Alias createAlias(Talkgroup talkgroup, System system, String aliasList, String group)
     {
-        Alias alias = new Alias(talkgroup.getAlphaTag());
+        Alias alias = new Alias(formatTalkgroupLabel(talkgroup));
         alias.setAliasListName(aliasList);
         alias.setGroup(group);
         alias.addAliasID(getTalkgroupAliasId(talkgroup, system));
         return alias;
+    }
+
+    /**
+     * Return a label for the provided talkgroup.
+     *
+     * @param talkgroup to format a label for
+     * @return the formatted talkgroup label
+     */
+    private String formatTalkgroupLabel(Talkgroup talkgroup) {
+        if (!talkgroup.getDescription().isEmpty()) {
+            return talkgroup.getDescription();
+        }
+        return talkgroup.getAlphaTag();
     }
 
     /**
